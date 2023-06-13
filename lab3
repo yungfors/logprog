@@ -151,3 +151,23 @@ goal
     findall(Price, товар(_, _, _, Price), Prices),
     средняя_цена(Prices, Average),
     write(Average), nl.
+    
+    % запрос: имена всех клиентов, у которых статус "VIP-клиент"
+    статус_клиента(Phone, "VIP-клиент"),
+    клиент(Name, Phone),
+    write(Name), nl,
+    fail.
+    
+    % запрос: все категории товаров
+    findall(Category, товар(_, _, Category, _), Categories),
+    list_to_set(Categories, UniqueCategories),
+    write(UniqueCategories), nl.
+    
+    % запрос: общая выручка за определенный день
+    продажи_в_день("20.05.2021", IDs),
+    findall(Price * Amount,
+            (покупка(_, ID, Amount, "20.05.2021"), member(ID, IDs), товар(ID, _, _, Price)),
+            Prices),
+    maplist(plus, Prices, Sums),
+    sum_list(Sums, Total),
+    write("Выручка: "), write(Total), nl.
