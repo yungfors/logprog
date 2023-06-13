@@ -1,0 +1,109 @@
+domains
+    status = string.
+    product(integer, string, string, integer).
+    client(string, string).
+    purchase(string, integer, integer, string).
+    regular(string).
+    sum_of_purchases(string, string, integer).
+    client_status(string, status).
+    inactive_clients_list = list(string).
+    big_spenders_list = list(pair(string, integer)).
+    
+predicates
+    product(integer, string, string, integer).
+    client(string, string).
+    purchase(string, integer, integer, string).
+    regular(string).
+    sum_of_purchases(string, string, integer).
+    client_status(string, status).
+    highest_spending_client(status, string, string, integer).
+    most_popular_product(string, string).
+    category_revenue(string, integer).
+    inactive_clients(string, inactive_clients_list).
+    big_spender_clients(integer, big_spenders_list)
+clauses
+    product(1, "T-shirt", "Clothing", 1000).
+    product(2, "Laptop", "Electronics", 50000).
+    product(3, "Chair", "Furniture", 3000).
+    product(4, "TV", "Electronics", 25000).
+    product(5, "Pen", "Stationery", 50).
+    product(6, "Notebook", "Stationery", 100).
+    product(7, "Carpet", "Furniture", 15000).
+    product(8, "Book", "Literature", 800).
+    product(9, "Mat", "Furniture", 2000).
+    product(10, "Watch", "Accessories", 10000).
+
+    client("Ivan Ivanov Ivanovich", "89991234567").
+    client("Anna Petrova Sidorova", "89997894532").
+    client("Petr Petrov Petrovich", "89991111111").
+    client("Andrey Igorevich Kozlov", "89992222222").
+    client("Oksana Vladimirovna Sergeeva", "89993333333").
+    client("Maksim Aleksandrovich Belov", "89994444444").
+    client("Ekaterina Sergeevna Lebedeva", "89995555555").
+
+    purchase("89991234567", 1, 2, "20.05.2021").
+    purchase("89997894532", 3, 1, "19.05.2021").
+    purchase("89991111111", 5, 10, "19.05.2021").
+    purchase("89994444444", 2, 1, "21.05.2021").
+    purchase("89994444444", 4, 1, "21.05.2021").
+    purchase("89993333333", 6, 5, "20.05.2021").
+    purchase("89993333333", 7, 1, "20.05.2021").
+    purchase("89993333333", 8, 2, "21.05.2021").
+    purchase("89995555555", 9, 1, "22.05.2021").
+    purchase("89991234567", 10, 3, "23.05.2021").
+
+    regular(Phone) :-
+        purchase(Phone, _, _, _),
+        not(purchase(Phone, _, _, Date1)),
+        not((purchase(Phone, _, _, Date2), Date2 < Date1)).
+
+    sum_of_purchases(Phone, Date, Sum) :-
+        findall(Quantity * Price,
+                purchase(Phone, ID, Quantity, Date), List),
+        maplist(plus, List, SumPerProduct),
+        sum_list(SumPerProduct, Sum).
+
+    client_status(Phone, "New client") :-
+        purchase(Phone, _, _, _),
+        not(regular(Phone)),
+        sum_of_purchases(Phone, _, Sum),
+        Sum < 10000.
+
+    client_status(Phone, "Regular client") :-
+        regular(Phone),
+        sum_of_purchases(Phone, _, Sum),
+        Sum < 50000.
+
+    client_status(Phone, "VIP client") :-
+        regular(Phone),
+        sum_of_purchases(Phone, _, Sum),
+        Sum >= 50000.
+   highest_spending_client(Status, Name, Phone, Sum) :-
+       client(Name, Phone),
+       client_status(Phone, Status),
+       findall(S, sum_of_purchases(Phone, _, S), Sums),
+       max_list(Sums, Sum).
+
+most_popular_product(ProductName, Category) :-
+    product(ID, ProductName, Category, _),
+    findall(ID, purchase(_, ID, _, _), IDs),
+    length(IDs, Count),
+    \+ (product(ID2, _, _, _), ID2 \= ID, member(ID2, IDs)).
+
+category_revenue(Category, Sum) :-
+    product(_, _, Category, _),
+    findall(Q * P, (purchase(_, ID, Q, _), product(ID, _, Category, P)), Sales),
+    sum_list(Sales, Sum).
+
+inactive_clients(Date, InactiveClients) :-
+    findall(Phone, (client(Phone, _), \+ purchase(Phone, _, _, Date)), InactiveClients).
+
+big_spender_clients(Threshold, BigSpenders) :-
+    findall(Phone-Sum,
+            (purchase(Phone, _, _, _), sum_of_purchases(Phone, _, Sum), Sum >= Threshold),
+            BigSpendersList),
+    sort(BigSpendersList, SortedList),
+    reverse(SortedList, BigSpenders).
+
+goal
+    clausesFromFile("queries.txt").
